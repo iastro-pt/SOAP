@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 
 import numpy, os, sys
-import pyfits
+import astropy.io.fits as pyfits
 from pylab import *
-import ConfigParser
+import configparser
 import shutil
 import string
-sys.path.append('StarSpot/')
+soap_root = os.path.dirname(os.path.realpath(__file__))
+starspot_root = os.path.join(soap_root, 'StarSpot')
+sys.path.append(starspot_root)
+print(sys.path)
 import PyStarSpot_soap2 as StSp
 
 ######################################################################
@@ -15,21 +18,23 @@ import PyStarSpot_soap2 as StSp
 
 # To read rdb file
 def read_rdb(filename):
-    
+
     f = open(filename, 'r')
     data = f.readlines()
     f.close()
-    
+
     z=0
     while data[z][:2] == '# ' or data[z][:2] == ' #':
         z += 1
 
-    key = string.split(data[z+0][:-1],'\t')
+    # key = string.split(data[z+0][:-1],'\t')
+    key = data[z+0][:-1].split('\t')
+
     output = {}
     for i in range(len(key)): output[key[i]] = []
-    
+
     for line in data[z+2:]:
-        qq = string.split(line[:-1],'\t')
+        qq = line[:-1].split('\t')
         for i in range(len(key)):
             try: value = float(qq[i])
             except ValueError: value = qq[i]
@@ -38,9 +43,9 @@ def read_rdb(filename):
     return output
 
 def write_rdb(filename,data,keys,format):
-    
+
     f = open(filename, 'w')
-        
+
     head1 = string.join(keys,'\t')
     head2 = ''
     for i in head1:
@@ -49,20 +54,20 @@ def write_rdb(filename,data,keys,format):
 
     f.write(head1+'\n')
     f.write(head2+'\n')
-    
+
     if len(data.values()) > 0:
         for i in range(len(data.values()[0])):
             line = []
             for j in keys: line.append(data[j][i])
             f.write(format % tuple(line))
-                            
+
     f.close()
 
 ####################################################################################
 #                    INITITIALIZATION                     ##########################
 ####################################################################################
 
-config = ConfigParser.ConfigParser()
+config = configparser.ConfigParser(inline_comment_prefixes=(';',))
 config.read("config.cfg")
 
 GRID              = int(config.get('main','grid' ))
@@ -108,7 +113,7 @@ CCF               = StSp.Ccf(rv        = rv_ccf,\
                              width     = max(rv_ccf),\
                              step      = rv_ccf_sampling,\
                              star      = STAR)
-               
+
 CCF_active_region = StSp.Ccf(rv        = rv_ccf_magn_region,\
                              intensity = intensity_ccf_magn_region,\
                              width     = max(rv_ccf_magn_region),\
@@ -161,9 +166,9 @@ if phase_in!='None':
 elif phase_step>0.:
     PSI = arange(0.,1.,phase_step)
 else:
-    print
-    print "WARNING: put a positive phase step ('ph_step' argument in 'config.cfg') or give a file name that contain the phases at which you want to compute the model ('phase_in' argument in 'config.cfg')"
-    print
+    print()
+    print( "WARNING: put a positive phase step ('ph_step' argument in 'config.cfg') or give a file name that contain the phases at which you want to compute the model ('phase_in' argument in 'config.cfg')")
+    print()
 
 
 ##########################################
@@ -172,11 +177,11 @@ else:
 
 # Test if at least one active region has been activated in the config.cfg file
 try:
-    print
-    print "****************************************************"
-    print "Estimating the photometric and spectroscopic effects"
-    print "****************************************************"
-    print
+    print()
+    print( "****************************************************")
+    print( "Estimating the photometric and spectroscopic effects")
+    print( "****************************************************")
+    print()
     FLUXstar_quiet, CCFstar_quiet, flux, CCFstar_flux, CCFstar_bconv, CCFstar_tot, rv_flux, rv_bconv, rv_tot, span_flux, span_bconv, span_tot, fwhm_flux, fwhm_bconv, fwhm_tot, depth_flux, depth_bconv, depth_tot =\
                             StSp.Calculate_activity_signal(NRHO, GRID, STAR, PSI, CCF, CCF_active_region, ACTIVE_REGIONS,INST_RESO)
 
@@ -192,11 +197,11 @@ try:
     ################ Write to file #########################################
     ########################################################################
 
-    print
-    print "****************************************************"
-    print "Writing to file"
-    print "****************************************************"
-    print
+    print()
+    print( "****************************************************")
+    print( "Writing to file")
+    print( "****************************************************")
+    print()
     CCF_folder_outputs = 'outputs/CCF_PROT=%.2f_i=%.2f_lon=(%.1f,%.1f,%.1f,%.1f)_lat=(%.1f,%.1f,%.1f,%.1f)_size=(%.4f,%.4f,%.4f,%.4f)/' % (STAR.prot,STAR.incl,active_region1.long,active_region2.long,active_region3.long,active_region4.long,active_region1.lat,active_region2.lat,active_region3.lat,active_region4.lat,active_region1.s,active_region2.s,active_region3.s,active_region4.s)
     CCF_folder_fits = CCF_folder_outputs + 'fits/'
 
@@ -341,8 +346,8 @@ try:
 #
 ## If no active region has been activated in the config.cfg file
 except IndexError:
-    print
-    print 'ERROR: There is no active region selected for the star, please select at least one in the config.cfg file'
-    print
+    print()
+    print( 'ERROR: There is no active region selected for the star, please select at least one in the config.cfg file')
+    print()
 
 show()
